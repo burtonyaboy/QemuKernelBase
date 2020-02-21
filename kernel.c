@@ -1,8 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "kstring.h"
-#include "timing.h"
+#include "system.h"
 
 /* make sure cross compiler is being used */
 #if defined(__linux__)
@@ -11,27 +10,16 @@
 
 // make sure we are compiling with a 32 bit compiler
 #if !defined(__i386__)
-#error "This tutorial needs to be completed with a ix86-elf compiler"
+#error "This must be built with a ix86-elf compiler"
 #endif
 
-// all the colors we have?
-enum vga_color {
-	VGA_COLOR_BLACK = 0,
-	VGA_COLOR_BLUE = 1,
-	VGA_COLOR_CYAN = 3,
-	VGA_COLOR_RED = 4,
-	VGA_COLOR_MAGENTA = 5,
-	VGA_COLOR_BROWN = 6,
-	VGA_COLOR_LIGHT_GREY = 7,
-	VGA_COLOR_DARK_GREY = 8,
-	VGA_COLOR_LIGHT_BLUE = 9,
-	VGA_COLOR_LIGHT_GREEN = 10,
-	VGA_COLOR_LIGHT_CYAN = 11,
-	VGA_COLOR_LIGHT_RED = 12,
-	VGA_COLOR_LIGHT_MAGENTA = 13,
-	VGA_COLOR_LIGHT_BROWN = 14,
-	VGA_COLOR_WHITE = 15,
-};
+size_t strlen(const char* str)
+{
+        size_t len = 0;
+        while(str[len])
+                len++;
+        return len;
+}
 
 // upper bits are for background, lower bits for foreground
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg)
@@ -49,14 +37,14 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 
-size_t terminal_row;
-size_t terminal_column;
+size_t term_y;
+size_t term_x;
 uint8_t terminal_color;
 uint16_t* terminal_buffer;
 
 void terminal_initialize(void) {
-	terminal_row = 0;
-	terminal_column = 0;
+	term_y = 0;
+	term_x = 0;
 	terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	//VGA text mode buffer
 	terminal_buffer = (uint16_t*) 0xB8000;
@@ -80,28 +68,114 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 	terminal_buffer[index] = vga_entry(c, color);
 }
 
-void terminal_scrolldown()
+void memcpy(char *dest, char *src, unsigned int count)
 {
-	for(size_t index = 0; index < VGA_WIDTH && terminal_buffer[index] != '\n'; index++);
-	//for(size_t new_index = 0; new_index < 
+	// change this to inline assembly function in the future 4 speed
+	for(unsigned int i = 0; i < count; i++)
+		dest[i] = src[i];
+}
+
+void memsetw(unsigned short *dest, unsigned short character, unsigned int count)
+{
+	for(unsigned int i = 0; i < count; i++)
+		dest[i] = character;
+}
+
+void memset(char *dest, char character, unsigned int count)
+{
+	// change this to inline assembly function in the future 4 speed
+	for(unsigned int i = 0; i < count; i++)
+		dest[i] = character;
+}
+
+void scroll(void)
+{	
+	unsigned blank, temp;
+
+	blank = vga_entry(' ', terminal_color);
+
+	if(term_y >= VGA_HEIGHT)
+	{
+		//temp is usually equal to 1
+		temp = term_y - VGA_HEIGHT + 1; 
+
+		memcpy(
+				(char *) terminal_buffer, // into terminal buffer
+				(char *) terminal_buffer + temp * VGA_WIDTH*2, // from the 2nd line  
+				(VGA_HEIGHT-temp) * (VGA_WIDTH * 2)  // whole buffer minus 1 line
+			);
+		
+		memsetw(
+				terminal_buffer + (VGA_HEIGHT - temp) * VGA_WIDTH, 
+				blank, 
+				VGA_WIDTH 
+			);
+		
+		term_y = VGA_HEIGHT - 1;
+	}
+}
+
+void move_csr(void)
+{
+	unsigned temp;
+
+	temp = term_y * VGA_WIDTH + term_x;
+
+	outportb(0x3D4, 14);
+	outportb(0x3D5, temp >> 8);
+	outportb(0x3D4, 15);
+	outportb(0x3D5, temp);
+}
+
+void cls()
+{
+	unsigned blank;
+	int i;
+
+	blank = vga_entry(' ', terminal_color);
+
+	for(i = 0; i < 25; i++)
+		memsetw(terminal_buffer + i * VGA_WIDTH, blank, VGA_WIDTH);
+
+	term_y = 0;
+	term_x = 0;
+	move_csr();
 }
 
 void terminal_putchar(char c)
 {
+
 	if(c == '\n')
 	{
-		terminal_row++;
-		terminal_column=0;
-		return;
+		term_y++;
+		term_x = 0;
 	}
-	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
-
-	if(++terminal_column == VGA_WIDTH)
+	else if(c == 0x08)
 	{
-		terminal_column = 0;
-		if(++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
+		if(term_x != 0) term_x--;
 	}
+	else if(c == 0x09)
+	{
+		term_x = (term_x + 8) & ~(8 - 1);
+	}
+	else if(c == '\r')
+	{
+		term_x = 0;
+	}
+	else if( c >= ' ')
+	{
+		terminal_putentryat(c, terminal_color, term_x, term_y);
+		term_x++;
+	}
+
+	if(term_x >= VGA_WIDTH)
+	{
+		term_x = 0;
+		term_y++;
+	}
+
+	scroll();
+	move_csr();
 }
 
 void terminal_write(const char* data, size_t size)
@@ -115,20 +189,55 @@ void terminal_writestring(const char* data)
 	terminal_write(data, strlen(data));
 }
 
+void terminal_write_int(int n)
+{
+	int n_tmp = n;
+	char out[11];
+
+	for(int i = 0; i < 10; i++)
+	{
+		out[9-i] = (char) (n_tmp % 10) + 0x30;
+		n_tmp /= 10;
+	}
+
+	out[10] = 0;
+
+	terminal_writestring(out);
+}
+
+unsigned char inportb(unsigned short _port)
+{
+	unsigned char rv;
+	__asm__ __volatile__ ("inb %1, %0" : "=a" (rv) : "dN" (_port));
+}
+
+void outportb(unsigned short _port, unsigned char _data)
+{
+	__asm__ __volatile__ ("outb %1, %0" : : "dN" (_port), "a" (_data));
+}
+
+void debug(void)
+{
+	terminal_putchar('X');
+}
+
 void kernel_main(void)
 {
-	char int_enabled = are_interrupts_enabled() ? 'T' : 'F';
+	//char int_enabled = 'T'; //are_interrupts_enabled() ? 'T' : 'F';
 	// Initialize terminal interface
 	terminal_initialize();
 	// Newline support is left as an exercise
+	char outstring[] = "Current Number: ";
+	//char newbuff[17];
 
-	for(int i = 0; i < 1; i++)
+	//memcpy(newbuff, outstring, strlen(outstring));
+	//terminal_writestring(newbuff);
+
+	for(int i = 0; i < 27; i++)
 	{
-		terminal_writestring("Shit kernel for learning :D\n");
-		terminal_writestring("here's a new line bitch\n");
-		terminal_writestring("Okay one more for the road\n");
-		terminal_writestring("Interrupts enabled: ");
-		terminal_writestring(&int_enabled);
-		terminal_writestring('\n');
+		terminal_writestring(outstring);
+		terminal_write_int(i);
+		terminal_putchar('\n');
 	}
+	
 }
