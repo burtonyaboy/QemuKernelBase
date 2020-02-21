@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run -v $PWD:/root/Documents -w "/root/Documents" --rm buildkernel make $1
+docker run -v $PWD:/root/Documents -w "/root/Documents" --rm burtonyaboy/kernelbuild:base make $1

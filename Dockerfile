@@ -1,2 +1,2 @@
-FROM buildkernel:latest
+FROM burtonyaboy/kernelbuild:base
 ENV PATH /root/opt/cross/bin:$PATH
