@@ -1,4 +1,3 @@
-
 // all the colors we have?
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
@@ -53,3 +52,9 @@ void terminal_writestring(const char* data);
 unsigned char inportb(unsigned short _port);
 
 void outportb(unsigned short _port, unsigned char _data);
+
+void gdt_flush();
+
+void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran);
+
+void gdt_install();

@@ -36,4 +36,20 @@ _start:
 1:	hlt
 	jmp 1b
 
+.global gdt_flush
+.type gdt_flush, @function
+gdt_flush:
+	ret
+	//lgdt (gp)
+	mov 0x10, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+	ret
+	//jmp flush_ret
+flush_ret:
+	ret
+
 .size _start, . - _start

@@ -1,1 +1,1 @@
-& 'C:\Program Files\qemu\qemu-system-i386.exe' --kernel .\barebones.bin
+C:\"Program Files\qemu\qemu-system-i386.exe" --kernel .\barebones.bin

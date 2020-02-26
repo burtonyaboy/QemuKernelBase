@@ -226,6 +226,7 @@ void kernel_main(void)
 	//char int_enabled = 'T'; //are_interrupts_enabled() ? 'T' : 'F';
 	// Initialize terminal interface
 	terminal_initialize();
+	gdt_install();
 	// Newline support is left as an exercise
 	char outstring[] = "Current Number: ";
 	//char newbuff[17];
