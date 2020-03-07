@@ -39,8 +39,8 @@ _start:
 .global gdt_flush
 .type gdt_flush, @function
 gdt_flush:
+	lgdt (gp)
 	ret
-	//lgdt (gp)
 	mov 0x10, %ax
 	mov %ax, %ds
 	mov %ax, %es
@@ -48,7 +48,7 @@ gdt_flush:
 	mov %ax, %gs
 	mov %ax, %ss
 	ret
-	//jmp flush_ret
+	jmp 0x08:flush_ret
 flush_ret:
 	ret
 
