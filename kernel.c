@@ -216,6 +216,14 @@ void outportb(unsigned short _port, unsigned char _data)
 	__asm__ __volatile__ ("outb %1, %0" : : "dN" (_port), "a" (_data));
 }
 
+// thanks linus
+static inline uint16_t cs(void)
+{
+	uint16_t seg;
+	asm volatile("movw %%cs,%0" : "=rm" (seg));
+	return seg;
+}
+
 void debug(void)
 {
 	terminal_putchar('X');
@@ -223,22 +231,22 @@ void debug(void)
 
 void kernel_main(void)
 {
-	//char int_enabled = 'T'; //are_interrupts_enabled() ? 'T' : 'F';
 	// Initialize terminal interface
 	terminal_initialize();
-	gdt_install();
-	// Newline support is left as an exercise
-	char outstring[] = "Current Number: ";
-	//char newbuff[17];
 
-	//memcpy(newbuff, outstring, strlen(outstring));
-	//terminal_writestring(newbuff);
+	gdt_install();
+	idt_install();
+	isrs_install();
+
+	char outstring[] = "Current Number: ";
 
 	for(int i = 0; i < 27; i++)
 	{
 		terminal_writestring(outstring);
 		terminal_write_int(i);
 		terminal_putchar('\n');
+		if(i > 15)
+			i = 69/0;
 	}
 	
 }

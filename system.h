@@ -17,6 +17,14 @@ enum vga_color {
 	VGA_COLOR_WHITE = 15,
 };
 
+struct regs
+{
+	unsigned int gs, fs, es, ds; 							// segs pushed last
+	unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax; 	// pushed by pusha
+	unsigned char int_no, err_code;							// our dummy and isr 
+	unsigned int eip, cs, eflags, useresp, ss;				// pushed by processor automatically
+};
+
 void debug(void);
 
 size_t strlen(const char* str);
@@ -58,3 +66,13 @@ void gdt_flush();
 void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran);
 
 void gdt_install();
+
+void idt_set_gate(unsigned char num, unsigned long base, unsigned short sel, unsigned char flag);
+
+void idt_install();
+
+void idt_load();
+
+void fault_handler(struct regs *r);
+
+void isrs_install(void);

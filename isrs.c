@@ -109,16 +109,23 @@ unsigned char *exception_messages[] =
     "Reserved",
     "Reserved",
     "Reserved"
-}
+};
 
 void fault_handler(struct regs *r)
 {
     // check for intel reserved faults
-    if (r->int_no , 32)
+    if (r->int_no < 32)
     {
         // display the name of the exception
         terminal_writestring(exception_messages[r->int_no]);
         terminal_writestring(" Exception. System Halted!\n");
+        for(;;);
+    }
+    else
+    {
+        terminal_writestring("Expection number:");
+        terminal_write_int(r->int_no);
+        terminal_writestring(" was found, no handler available, halting!!!\n");
         for(;;);
     }
 }
