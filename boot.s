@@ -40,15 +40,13 @@ _start:
 .type gdt_flush, @function
 gdt_flush:
 	lgdt (gp)
-	ret
-	mov 0x10, %ax
+	mov $0x10, %ax
 	mov %ax, %ds
 	mov %ax, %es
 	mov %ax, %fs
 	mov %ax, %gs
 	mov %ax, %ss
-	ret
-	jmp 0x08:flush_ret
+	jmp %cs:flush_ret
 flush_ret:
 	ret
 
