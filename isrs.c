@@ -119,11 +119,12 @@ void fault_handler(struct regs *r)
         // display the name of the exception
         terminal_writestring(exception_messages[r->int_no]);
         terminal_writestring(" Exception. System Halted!\n");
+        //dump_regs(r);
         for(;;);
     }
     else
     {
-        terminal_writestring("Expection number:");
+        terminal_writestring("Exception number: ");
         terminal_write_int(r->int_no);
         terminal_writestring(" was found, no handler available, halting!!!\n");
         for(;;);

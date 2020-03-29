@@ -76,3 +76,15 @@ void idt_load();
 void fault_handler(struct regs *r);
 
 void isrs_install(void);
+
+void irq_install(void);
+
+void irq_install_handler(int irq, void (*handler)(struct regs *r));
+
+void irq_uninstall_handler(int irq);
+
+void timer_install(void);
+
+void timer_phase(int hz);
+
+void dump_regs(struct regs *r);

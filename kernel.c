@@ -208,12 +208,12 @@ void terminal_write_int(int n)
 unsigned char inportb(unsigned short _port)
 {
 	unsigned char rv;
-	__asm__ __volatile__ ("inb %1, %0" : "=a" (rv) : "dN" (_port));
+	asm volatile ("inb %1, %0" : "=a" (rv) : "dN" (_port));
 }
 
 void outportb(unsigned short _port, unsigned char _data)
 {
-	__asm__ __volatile__ ("outb %1, %0" : : "dN" (_port), "a" (_data));
+	asm volatile ("outb %1, %0" : : "dN" (_port), "a" (_data));
 }
 
 // thanks linus
@@ -229,6 +229,12 @@ void debug(void)
 	terminal_putchar('X');
 }
 
+void irq_timer_handler(struct regs *r)
+{
+	terminal_writestring("Timer triggered!\n");
+	return;
+}
+
 void kernel_main(void)
 {
 	// Initialize terminal interface
@@ -237,16 +243,21 @@ void kernel_main(void)
 	gdt_install();
 	idt_install();
 	isrs_install();
+	//irq_install();
+	asm volatile("sti");
+
+	//timer_phase(200);
+	//timer_install();
 
 	char outstring[] = "Current Number: ";
 
-	for(int i = 0; i < 27; i++)
+	for(int i = 0; i < 5; i++)
 	{
 		terminal_writestring(outstring);
 		terminal_write_int(i);
 		terminal_putchar('\n');
-		if(i > 15)
+		if(i > 3)
 			i = 69/0;
 	}
 	
-}
+} 
