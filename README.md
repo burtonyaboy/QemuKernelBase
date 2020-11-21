@@ -7,3 +7,4 @@ Uses docker to build kernel images, windows and linux scripts are available to d
 There's lots of great resources for learning OS dev, but they can be hard to find. Some are pretty old, but they are still good. Here's a list of what I really liked and benefited from.
 - https://wiki.osdev.org/Main_Page
 - http://www.osdever.net/bkerndev/Docs/title.htm
+- https://www.gnu.org/software/grub/manual/multiboot/html_node/Example-OS-code.html

@@ -237,6 +237,7 @@ void irq_timer_handler(struct regs *r)
 
 void kernel_main(void)
 {
+	int j = 0;
 	// Initialize terminal interface
 	terminal_initialize();
 
@@ -256,8 +257,9 @@ void kernel_main(void)
 		terminal_writestring(outstring);
 		terminal_write_int(i);
 		terminal_putchar('\n');
-		if(i > 3)
-			i = 69/0;
 	}
-	
+
+	// Cause an exception to test interrupts
+	j /= 0;
+
 } 
